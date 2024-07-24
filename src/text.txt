@@ -1,0 +1,284 @@
+import React, { useState, useEffect } from 'react';
+import './App.css';
+import HabitInput from './components/HabitInput';
+import Header from './components/Header';
+import HabitList from './components/HabitList';
+import ProgressSummary from './components/ProgressSummary';
+
+function App() {
+  const [habitList, setHabitList] = useState([]);
+  const [isComplete, setIsComplete] = useState(true);
+  const [selectedHabit, setSelectedHabit] = useState(null);
+
+
+  useEffect(() => {
+    const storedHabits = localStorage.getItem('habitList');
+    if (storedHabits) {
+      try {
+        const parsedHabits = JSON.parse(storedHabits);
+        setHabitList(parsedHabits);
+      } catch (error) {
+        console.error('Error parsing local storage data:', error);
+        localStorage.removeItem('habitList');
+      }
+    }
+  }, []);
+
+ 
+  useEffect(() => {
+    localStorage.setItem('habitList', JSON.stringify(habitList));
+  }, [habitList]);
+
+  const addHabit = (habitName) => {
+    const newHabit = {
+      name: habitName,
+      progress: Array(7).fill(false),
+    };
+    setHabitList([...habitList, newHabit]);
+    setIsComplete(!isComplete);
+  };
+
+  const deleteHabit = (habitToDelete) => {
+    setHabitList(habitList.filter(habit => habit.name !== habitToDelete.name));
+  };
+
+  const handleHeaderClick = () => {
+    setIsComplete(!isComplete);
+  };
+
+  const handleWeakView = (habit) => {
+    setSelectedHabit(habit);
+  };
+
+  const handleBack = () => {
+    setSelectedHabit(null);
+  };
+
+  const updateProgress = (habitName, dayIndex) => {
+    const updatedHabitList = habitList.map(habit => {
+      if (habit.name === habitName) {
+        const updatedProgress = [...habit.progress];
+        updatedProgress[dayIndex] = !updatedProgress[dayIndex];
+        return { ...habit, progress: updatedProgress };
+      }
+      return habit;
+    });
+    setHabitList(updatedHabitList);
+  };
+
+  return (
+    <div className="container">
+      <Header handleHeaderClick={handleHeaderClick} />
+      {selectedHabit ? (
+        <ProgressSummary
+          selectedHabit={selectedHabit}
+          handleBack={handleBack}
+          updateProgress={updateProgress}
+        />
+      ) : (
+        <>
+          <HabitInput addHabit={addHabit} isComplete={isComplete} />
+          <HabitList
+            habitList={habitList}
+            deleteHabit={deleteHabit}
+            handleWeakView={handleWeakView}
+          />
+        </>
+      )}
+    </div>
+  );
+}
+
+export default App;
+
+
+----------------------------------------------------------------------------------------------
+
+import React from 'react'
+import Button from '@mui/material/Button';
+import HabitInput from './HabitInput';
+
+
+export default function Header({handleHeaderClick}) {
+
+  return (
+    <div className="header flex justify-between items-center bg-orange-500 p-3 px-14">
+      <h1 className='text-3xl font-bold text-white font-sans'>Habit Tracker</h1>
+      <Button
+        variant="contained" 
+        color='primary'
+        onClick={handleHeaderClick}>
+          Add Habit
+      </Button>
+    </div>
+  )
+}
+
+
+------------------------------------------------------------------------------------------------
+
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
+
+export default function HabitInput({addHabit, isComplete}) {
+
+  const [habit, setHabit] = useState('');
+
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if(habit) {
+      addHabit(habit);
+      setHabit('');
+    }
+  }
+
+  return (
+    <>
+      {isComplete && (<motion.form 
+        onSubmit={handleSubmit}
+        className='h-48 w-1/3 mx-auto mt-10 md-12 text-center border-2'
+        initial={{ y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 260, damping: 20 }}>
+      <h1 
+        className='text-3xl text-center'>
+          Add New Habit
+      </h1>
+      <TextField
+        label="Enter your Habit"
+        id="outlined-size-small"
+        className='w-11/12 h-132 border-2 p-2 '
+        onChange={(e) => {setHabit(e.target.value)}}
+        value={habit}
+        sx = {{marginTop: 2}}
+      />
+      <Button 
+        type='submit'
+        variant="contained" 
+        className='w-11/12'
+        sx = {{marginTop: 2}}>
+          Add Habit
+      </Button>
+    </motion.form>)}
+    </>
+  )
+}
+
+----------------------------------------------------------------------------------------------
+
+import React from 'react';
+import Button from '@mui/material/Button';
+import { motion } from 'framer-motion';
+
+export default function ProgressSummary({ selectedHabit, handleBack, updateProgress }) {
+  const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+  const handleCheckboxChange = (index) => {
+    updateProgress(selectedHabit.name, index);
+  };
+
+  return (
+    <motion.div 
+        className='text-center bg-orange-50 rounded-xl'
+        initial={{ opacity: 0, y: -50 }}
+        animate={{ opacity: 1, y: 0 }} 
+        exit={{ opacity: 0, y: -50 }} 
+        transition={{ type: 'spring', stiffness: 260, damping: 20 }}>
+      <h2 className='text-5xl mt-20 font-bold'>{selectedHabit.name}</h2>
+
+      <div className="container flex justify-around items-center mt-14">
+        {daysOfWeek.map((day, index) => (
+          <div key={index} className="box border-2 text-center rounded-xl h-36 w-44 shadow-md bg-white">
+            <h5 className='font-semibold text-3xl'>{day}</h5>
+            <p className='text-xs my-3 text-zinc-600'>Day {index + 1}</p>
+            <input
+              type="checkbox"
+              className='h-10 w-10'
+              onChange={() => handleCheckboxChange(index)}
+            />
+          </div>
+        ))}
+      </div>
+      <Button
+        variant="contained"
+        color='warning'
+        className='w-11/12'
+        onClick={handleBack}
+        sx={{ marginTop: 6 }}>
+        Back
+      </Button>
+    </motion.div>
+  );
+}
+
+---------------------------------------------------------------------------------------------------------
+
+
+import React from 'react';
+import HabitItem from './HabitItem';
+
+export default function HabitList({ habitList, deleteHabit, handleWeakView }) {
+  return (
+    <ul>
+      {habitList.map((habit, index) => (
+        <HabitItem
+          key={index}
+          habit={habit}
+          deleteHabit={() => deleteHabit(habit)}
+          handleWeakView={() => handleWeakView(habit)}
+        />
+      ))}
+    </ul>
+  );
+}
+
+
+---------------------------------------------------------------------------------------------------------------
+
+import React from 'react';
+import Button from '@mui/material/Button';
+import { motion } from 'framer-motion';
+
+
+export default function HabitItem({ habit, deleteHabit, handleWeakView, updateProgress }) {
+
+    let completedDays = 0;
+
+    if (habit && habit.progress) {
+      completedDays = habit.progress.filter(day => day).length;
+    }
+    
+
+  return (
+    <motion.li 
+        initial={{ opacity: 0, y: -50 }} 
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -50 }}
+        transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+        className='flex justify-between items-center bg-orange-100 border-2 w-11/12 rounded-xl p-4 m-4 mx-auto border-b-stone-400'>
+      <div className='ml-5'>
+        <h2 className='text-2xl'>{habit?.name}</h2>
+        <p className='text-stone-600'>{completedDays}/7 days</p>
+      </div>
+      <div className='w-1/4 flex justify-around'>
+        <Button
+          variant="contained"
+          color='primary'
+          className='w-36'
+          onClick={() => handleWeakView(habit)}>
+          Weak View
+        </Button>
+        <Button
+          variant="contained"
+          color='warning'
+          className='w-20'
+          onClick={() => deleteHabit(habit)}>
+          Delete
+        </Button>
+      </div>
+    </motion.li>
+  );
+}
