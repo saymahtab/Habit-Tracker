@@ -7,7 +7,7 @@ import ProgressSummary from './components/ProgressSummary';
 
 function App() {
   const [habitList, setHabitList] = useState([]);
-  const [isComplete, setIsComplete] = useState(true);
+  const [isComplete, setIsComplete] = useState(false);
   const [selectedHabit, setSelectedHabit] = useState(null);
 
 
