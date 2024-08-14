@@ -23,7 +23,6 @@ function App() {
       }
     }
   }, []);
-
  
   useEffect(() => {
     localStorage.setItem('habitList', JSON.stringify(habitList));
